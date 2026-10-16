@@ -71,7 +71,7 @@ const BentoCard = ({
       )}
     >
       <Link href={href} className="inline-flex">
-        <Button variant="ghost" size="sm" className="pointer-events-auto h-7 min-h-7 px-3 text-[#007acc] hover:text-[#007acc]/80">
+        <Button variant="ghost" size="sm" className="pointer-events-auto h-7 min-h-7 px-3 inline-flex items-center gap-2 py-2.5 text-[#fcfdfd] hover:bg-[#333] text-sm font-medium transition-colors">
           <span className="leading-none">{cta}</span>
           <ArrowRightIcon className="h-3.5 w-3.5 rtl:rotate-180 ml-1.5" />
         </Button>

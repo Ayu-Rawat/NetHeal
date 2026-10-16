@@ -16,6 +16,7 @@ import {
   type NodeMouseHandler,
   type EdgeMouseHandler,
   type OnNodesChange,
+  applyNodeChanges,
   Panel,
   Position,
 } from '@xyflow/react';
@@ -230,6 +231,7 @@ function FlowCanvas({
   onLockToggle,
 }: NetworkCanvasProps) {
   const { screenToFlowPosition } = useReactFlow();
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [draggedPositions, setDraggedPositions] = useState<Record<string, { x: number; y: number }>>({});
 
   const routerIdsKey = routers.map(r => r.id).sort().join(',');
@@ -253,7 +255,7 @@ function FlowCanvas({
     return counts;
   }, [links]);
 
-  const nodes: Node[] = useMemo(() =>
+  const nodeData: Node[] = useMemo(() =>
     routers.map((r) => ({
       id: r.id,
       type: 'device',
@@ -270,6 +272,11 @@ function FlowCanvas({
     })),
     [routers, connectionCount, draggedPositions, locked]
   );
+
+  // Sync nodes with nodeData
+  useEffect(() => {
+    setNodes(nodeData);
+  }, [nodeData]);
 
   const nodeCenters = useMemo(() => {
     const map: Record<string, { x: number; y: number }> = {};
@@ -365,18 +372,29 @@ function FlowCanvas({
   }, [locked]);
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
-    if (locked) return;
-    const positionChanges = changes.filter(c => c.type === 'position');
-    if (positionChanges.length === 0) return;
-    setDraggedPositions(prev => {
-      const next = { ...prev };
-      for (const change of positionChanges) {
-        if (change.type === 'position' && change.position) {
-          next[change.id] = change.position;
+    if (locked) {
+      // When locked, only allow dimension changes (measurements) but not position changes
+      const allowedChanges = changes.filter(c => c.type === 'dimensions' || c.type === 'select');
+      setNodes(nds => applyNodeChanges(allowedChanges, nds));
+      return;
+    }
+    
+    // When not locked, apply all changes
+    setNodes(nds => applyNodeChanges(changes, nds));
+    
+    // Track position changes for persistence
+    const positionChanges = changes.filter(c => c.type === 'position' && !c.dragging);
+    if (positionChanges.length > 0) {
+      setDraggedPositions(prev => {
+        const next = { ...prev };
+        for (const change of positionChanges) {
+          if (change.type === 'position' && change.position) {
+            next[change.id] = change.position;
+          }
         }
-      }
-      return next;
-    });
+        return next;
+      });
+    }
   }, [locked]);
 
   const onNodeClick: NodeMouseHandler = useCallback((_, node) => {

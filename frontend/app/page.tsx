@@ -7,9 +7,6 @@ import { BentoCard, BentoGrid } from '@/components/magicui/bento-grid';
 import { AnimatedBeam } from '@/components/magicui/animated-beam';
 import { cn } from '@/lib/utils';
 
-import Footer from "@/components/footer/footer";
-import FooterWrapper from "@/components/footer/footer-wrapper";
-
 /* ── Live network beam demo used as bento background ── */
 function NetworkBeamDemo() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,7 +17,7 @@ function NetworkBeamDemo() {
   const n5 = useRef<HTMLDivElement>(null);
 
   return (
-     <div ref={containerRef} className="relative w-full h-40 overflow-hidden pointer-events-none select-none">
+     <div ref={containerRef} className="absolute inset-0 flex items-center justify-center overflow-hidden p-4 opacity-90 select-none pointer-events-none">
       {(
         [
           { ref: n1, label: 'R1', style: { left: '44%', top: '6%' } },
@@ -58,7 +55,7 @@ function NetworkBeamDemo() {
 /* ── Pseudocode background for algorithm card ── */
 function AlgoBackground() {
   return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden p-4 opacity-50 select-none pointer-events-none">
+    <div className="absolute inset-0 flex items-center justify-center overflow-hidden p-4 opacity-90 select-none pointer-events-none">
       <pre className="text-[10px] leading-5 text-white font-mono whitespace-pre text-left">
 {`function Dijkstra(graph, source):
   dist[source] = 0
@@ -81,11 +78,10 @@ function AlgoBackground() {
 /* ── Stats background ── */
 function StatsBackground() {
   return (
-    <div className="relative w-full h-40 overflow-hidden pointer-events-none select-none flex items-center justify-center p-4"
-    >
+    <div className="absolute inset-0 flex items-center justify-center overflow-hidden p-4 opacity-90 select-none pointer-events-none">
       <div className="grid grid-cols-3 w-full max-w-md items-center"
         style={{
-          marginTop:100
+          marginTop:0
         }}
       >
         {[
@@ -118,8 +114,8 @@ export default function HomePage() {
       <div className="max-w-6xl mx-auto px-6 pt-16 pb-10">
         {/* Logo + title */}
         <div className="flex items-center gap-4 mb-5">
-          <div className="w-12 h-12 rounded-xl bg-[#007acc] flex items-center justify-center shadow-[0_0_24px_rgba(0,122,204,0.4)] shrink-0">
-            <Network className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-xl bg-[#ffffff] flex items-center justify-center shadow-[0_0_24px_rgba(0,122,204,0.4)] shrink-0">
+            <Network className="w-6 h-6 text-black" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight">NetHeal</h1>
@@ -136,7 +132,7 @@ export default function HomePage() {
         <div className="flex flex-wrap gap-3 mb-14">
           <Link
             href="/simulator"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#007acc] hover:bg-[#0062a3] text-white text-sm font-semibold transition-colors shadow-[0_0_16px_rgba(0,122,204,0.3)]"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white hover:bg-[#252526] text-black hover:text-slate-300 text-sm font-medium transition-colors border border-transparent hover:border-[#333]"
           >
             <Network className="w-4 h-4" />
             Launch Simulator
@@ -176,7 +172,7 @@ export default function HomePage() {
             className="col-span-3 md:col-span-1"
             background={<AlgoBackground />}
             Icon={GitFork}
-            description="Shortest-path routing using a priority queue. Recomputes instantly on link cost changes."
+            description="Shortest-path routing."
             href="/concepts"
             cta="Study Algorithm"
           />
@@ -187,17 +183,13 @@ export default function HomePage() {
             className="col-span-3 md:col-span-2"
             background={<StatsBackground />}
             Icon={Zap}
-            description="Monitor packet delivery ratios, average path costs, and real-time convergence metrics."
+            description="Monitor packet delivery ratios, average path costs and real-time convergence metrics."
             href="/analytics"
             cta="View Analytics"
           />
 
         </BentoGrid>
       </div>
-
-      {/* <FooterWrapper>
-        <Footer/>
-      </FooterWrapper> */}
     </div>
   );
 }
