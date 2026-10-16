@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 6.3%; /* #101010 */
+    --foreground: 0 0% 80%; /* #cccccc */
+    --card: 0 0% 9.4%; /* #181818 */
+    --card-foreground: 0 0% 80%; /* #cccccc */
+    --popover: 0 0% 9.4%; /* #181818 */
+    --popover-foreground: 0 0% 80%; /* #cccccc */
+    --primary: 207 100% 40%; /* #007acc */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 14.5%; /* #252526 */
+    --secondary-foreground: 0 0% 80%; /* #cccccc */
+    --muted: 0 0% 14.5%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 207 100% 40%; /* #007acc */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%; /* #333333 */
+    --input: 0 0% 20%;
+    --ring: 207 100% 40%; /* #007acc */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background-color: #101010;
+    color: #cccccc;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #181818;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #444444;
+  }
+}
+
+/* React Flow Canvas Overrides */
+.react-flow__background {
+  background-color: #101010 !important;
+}
+
+.react-flow__minimap {
+  background-color: #181818 !important;
+  border: 1px solid #333333 !important;
+}
+
+.react-flow__controls button {
+  background-color: #252526 !important;
+  border-color: #333333 !important;
+  color: #cccccc !important;
+}
+
+.react-flow__controls button:hover {
+  background-color: #333333 !important;
+  color: #ffffff !important;
+}
+
+@keyframes packet-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.packet-animate {
+  animation: packet-pulse 1s ease-in-out infinite;
+}
