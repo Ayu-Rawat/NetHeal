@@ -1,6 +1,7 @@
 'use client';
 
-import { Network, RefreshCw, Download } from 'lucide-react';
+import Link from 'next/link';
+import { Network, RefreshCw, Download, BarChart3, Home } from 'lucide-react';
 import { SimulationMetrics } from '@/lib/types';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -24,23 +25,23 @@ export function Header({ status, metrics, onReset }: HeaderProps) {
   }[status];
 
   return (
-    <header className="bg-navy-800 border-b border-navy-600 px-4 py-3 flex items-center gap-4">
+    <header className="bg-navy-800 border-b border-navy-600 px-4 py-2.5 flex items-center gap-3">
       {/* Logo */}
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
-          <Network className="w-4 h-4 text-white" />
+      <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        <div className="w-7 h-7 rounded-lg bg-cyan-500 flex items-center justify-center shrink-0">
+          <Network className="w-3.5 h-3.5 text-white" />
         </div>
-        <span className="font-bold text-lg text-white tracking-tight hidden sm:block">
+        <span className="font-bold text-base text-white tracking-tight hidden sm:block">
           NetHeal
         </span>
-      </div>
+      </Link>
 
-      <div className="h-6 w-px bg-navy-600 hidden sm:block" />
+      <div className="h-5 w-px bg-navy-600 hidden sm:block" />
 
       {/* Status */}
       <span
         className={cn(
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border',
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold border',
           statusConfig.cls
         )}
       >
@@ -55,14 +56,25 @@ export function Header({ status, metrics, onReset }: HeaderProps) {
       </span>
 
       {/* Health */}
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
         Health: {healthPct}%
       </span>
 
       <div className="flex-1" />
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        {/* Analytics link */}
+        <Link
+          href="/analytics"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-navy-700 hover:bg-cyan-500/10 text-slate-300 hover:text-cyan-400 text-xs font-medium transition-colors border border-navy-600 hover:border-cyan-500/30"
+        >
+          <BarChart3 className="w-3.5 h-3.5" />
+          Analytics
+        </Link>
+
+        <div className="h-4 w-px bg-navy-600" />
+
         <button
           onClick={onReset}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-navy-700 hover:bg-navy-600 text-slate-300 text-xs font-medium transition-colors border border-navy-600"
@@ -88,6 +100,16 @@ export function Header({ status, metrics, onReset }: HeaderProps) {
           <Download className="w-3.5 h-3.5" />
           CSV
         </a>
+
+        <div className="h-4 w-px bg-navy-600" />
+
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-navy-700 hover:bg-navy-600 text-slate-300 text-xs font-medium transition-colors border border-navy-600"
+        >
+          <Home className="w-3.5 h-3.5" />
+          Home
+        </Link>
       </div>
     </header>
   );

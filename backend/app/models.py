@@ -48,6 +48,7 @@ class RouterState(BaseModel):
     status: RouterStatus = RouterStatus.UP
     x: float = 0.0
     y: float = 0.0
+    device_type: str = "router"
 
 
 class LinkState(BaseModel):
@@ -85,6 +86,7 @@ class PacketState(BaseModel):
     route: List[str] = Field(default_factory=list)
     current_hop: int = 0
     status: PacketStatus = PacketStatus.PENDING
+    route_cost: float = 0.0
     created_at: str = ""
     completed_at: Optional[str] = None
     drop_reason: Optional[str] = None

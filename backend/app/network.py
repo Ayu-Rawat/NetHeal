@@ -74,6 +74,7 @@ class NetworkGraph:
                 status=RouterStatus.UP,
                 x=r_def.get("x", 0),
                 y=r_def.get("y", 0),
+                device_type=r_def.get("device_type", "router"),
             )
             self.graph.add_node(r_def["id"])
 
@@ -89,7 +90,7 @@ class NetworkGraph:
             self.graph.add_edge(
                 lk_def["source"],
                 lk_def["target"],
-                weight=lk_def["cost"],
+                cost=lk_def["cost"],
                 latency=lk_def["latency"],
                 link_id=lk_def["id"],
             )
@@ -202,7 +203,7 @@ class NetworkGraph:
                 lk_def = self._link_defs[link_id]
                 self.graph.add_edge(
                     lk.source, lk.target,
-                    weight=lk_def["cost"],
+                    cost=lk_def["cost"],
                     latency=lk_def["latency"],
                     link_id=link_id,
                 )
@@ -257,7 +258,7 @@ class NetworkGraph:
                         lk.status = LinkStatus.UP
                         self.graph.add_edge(
                             lk_def["source"], lk_def["target"],
-                            weight=lk_def["cost"],
+                            cost=lk_def["cost"],
                             latency=lk_def["latency"],
                             link_id=lk_def["id"],
                         )
@@ -275,3 +276,133 @@ class NetworkGraph:
         """Restore the original topology (all routers and links UP)."""
         with self._lock:
             self._build()
+
+    # ------------------------------------------------------------------
+    # Update link cost
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Dynamic topology (drop devices / draw links)
+    # ------------------------------------------------------------------
+
+    _DEVICE_PREFIXES = {
+        "router": "R",
+        "pc": "PC",
+        "printer": "PRN",
+        "server": "SRV",
+        "switch": "SW",
+        "storage": "NAS",
+    }
+    _DEVICE_LABELS = {
+        "router": "Router",
+        "pc": "PC",
+        "printer": "Printer",
+        "server": "Server",
+        "switch": "Switch",
+        "storage": "Storage",
+    }
+
+    def add_node(self, device_type: str, x: float, y: float) -> RouterState:
+        """Add a device at canvas coordinates and return its runtime state."""
+        dtype = (device_type or "router").lower().strip()
+        if dtype not in self._DEVICE_PREFIXES:
+            dtype = "router"
+        prefix = self._DEVICE_PREFIXES[dtype]
+        label = self._DEVICE_LABELS[dtype]
+        with self._lock:
+            n = 1
+            while f"{prefix}{n}" in self._routers:
+                n += 1
+            node_id = f"{prefix}{n}"
+            display_name = f"{label} {n}"
+            r_def = {
+                "id": node_id,
+                "display_name": display_name,
+                "x": x,
+                "y": y,
+                "device_type": dtype,
+            }
+            self._router_defs[node_id] = r_def
+            state = RouterState(
+                id=node_id,
+                display_name=display_name,
+                status=RouterStatus.UP,
+                x=x,
+                y=y,
+                device_type=dtype,
+            )
+            self._routers[node_id] = state
+            self.graph.add_node(node_id)
+            self._log_event(
+                EventSeverity.INFO, "SYSTEM",
+                f"{label} {node_id} added to the topology."
+            )
+            return state
+
+    def add_link(self, source: str, target: str, cost: float = 1.0, latency: float = 10.0) -> LinkState:
+        """Connect two devices with a bidirectional link."""
+        if source == target:
+            raise ValueError("Cannot connect a device to itself.")
+        with self._lock:
+            if source not in self._routers:
+                raise ValueError(f"Device '{source}' not found.")
+            if target not in self._routers:
+                raise ValueError(f"Device '{target}' not found.")
+            existing = self._find_link_id(source, target)
+            if existing:
+                raise ValueError(f"A link already exists between '{source}' and '{target}'.")
+            n = 1
+            while f"L{n}" in self._links:
+                n += 1
+            link_id = f"L{n}"
+            lk_def = {
+                "id": link_id,
+                "source": source,
+                "target": target,
+                "cost": cost,
+                "latency": latency,
+            }
+            self._link_defs[link_id] = lk_def
+            state = LinkState(
+                id=link_id,
+                source=source,
+                target=target,
+                cost=cost,
+                latency=latency,
+                status=LinkStatus.UP,
+            )
+            self._links[link_id] = state
+            src_up = self._routers[source].status == RouterStatus.UP
+            tgt_up = self._routers[target].status == RouterStatus.UP
+            if src_up and tgt_up:
+                self.graph.add_edge(
+                    source, target,
+                    cost=cost,
+                    latency=latency,
+                    link_id=link_id,
+                )
+            else:
+                state.status = LinkStatus.DOWN
+            self._log_event(
+                EventSeverity.INFO, "SYSTEM",
+                f"Link {link_id} connected {source}↔{target} (cost {cost})."
+            )
+            return state
+
+    def update_link_cost(self, link_id: str, cost: float) -> None:
+        """Update the routing cost of a link and refresh the graph edge."""
+        with self._lock:
+            if link_id not in self._links:
+                raise ValueError(f"Link '{link_id}' not found.")
+            lk = self._links[link_id]
+            lk.cost = cost
+            # Update the original def so resets preserve the change
+            if link_id in self._link_defs:
+                self._link_defs[link_id]["cost"] = cost
+            # Update graph edge if currently UP
+            if lk.status == LinkStatus.UP and self.graph.has_edge(lk.source, lk.target):
+                self.graph[lk.source][lk.target]["cost"] = cost
+            self._log_event(
+                EventSeverity.INFO, "SYSTEM",
+                f"Link {link_id} ({lk.source}↔{lk.target}) cost updated to {cost}."
+            )

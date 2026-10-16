@@ -95,7 +95,7 @@ class RoutingEngine:
             results: List[RouteResult] = []
             for path in all_simple:
                 cost = sum(
-                    graph[path[i]][path[i + 1]].get("weight", 1)
+                    graph[path[i]][path[i + 1]].get("cost", 1)
                     for i in range(len(path) - 1)
                 )
                 results.append(RouteResult(

@@ -29,6 +29,7 @@ import {
   RotateCcw,
   AlertTriangle,
   CheckCircle2,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,9 @@ interface ControlPanelProps {
   onRefresh: () => void;
   onReset: () => void;
   onLoadTopology: (id: string) => void;
+  onEditLinkCost?: (linkId: string, currentCost: number) => void;
+  /** Called with the route path after packets are successfully sent */
+  onPacketsSent?: (path: string[]) => void;
 }
 
 export function ControlPanel({
@@ -58,6 +62,8 @@ export function ControlPanel({
   onRefresh,
   onReset,
   onLoadTopology,
+  onEditLinkCost,
+  onPacketsSent,
 }: ControlPanelProps) {
   const [src, setSrc] = useState('');
   const [dst, setDst] = useState('');
@@ -86,8 +92,14 @@ export function ControlPanel({
     setLoading(true);
     setError(null);
     try {
+      // First compute the route so we know the path for animation
+      const routeResult = await api.getRoute(src, dst);
       await api.sendPackets(src, dst, 4);
       onRefresh();
+      // Trigger packet travel animation
+      if (onPacketsSent && routeResult.reachable && routeResult.path.length >= 2) {
+        onPacketsSent(routeResult.path);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
     } finally {
@@ -165,12 +177,12 @@ export function ControlPanel({
   const selectedEdge = links.find((l) => l.id === selectedEdgeId);
 
   return (
-    <div className="h-full overflow-y-auto bg-navy-800 border-l border-navy-600 flex flex-col">
-      <div className="p-4 border-b border-navy-600">
+    <div className="h-full overflow-y-auto bg-[#181818] border-l border-[#333] flex flex-col">
+      <div className="px-4 py-3 border-b border-[#333]">
         <h2 className="font-semibold text-white text-sm">Control Panel</h2>
       </div>
 
-      <div className="flex-1 p-3 space-y-4 overflow-y-auto">
+      <div className="flex-1 px-3 py-3 space-y-4 overflow-y-auto">
         {/* Topology Selector */}
         {topologies.length > 0 && (
           <section>
@@ -178,7 +190,7 @@ export function ControlPanel({
               Topology
             </label>
             <Select onValueChange={onLoadTopology}>
-              <SelectTrigger className="mt-1 h-8 text-xs bg-navy-700 border-navy-600">
+              <SelectTrigger className="mt-1 h-8 text-xs bg-[#252526] border-[#444] text-slate-200 focus:ring-[#007acc]">
                 <SelectValue placeholder="Select topology…" />
               </SelectTrigger>
               <SelectContent>
@@ -200,8 +212,8 @@ export function ControlPanel({
             Routing
           </label>
           <Select value={src} onValueChange={setSrc}>
-            <SelectTrigger className="h-8 text-xs bg-navy-700 border-navy-600">
-              <SelectValue placeholder="Source router…" />
+            <SelectTrigger className="h-8 text-xs bg-[#252526] border-[#444] text-slate-200 focus:ring-[#007acc]">
+              <SelectValue placeholder="Source device…" />
             </SelectTrigger>
             <SelectContent>
               {routers.map((r) => (
@@ -212,8 +224,8 @@ export function ControlPanel({
             </SelectContent>
           </Select>
           <Select value={dst} onValueChange={setDst}>
-            <SelectTrigger className="h-8 text-xs bg-navy-700 border-navy-600">
-              <SelectValue placeholder="Destination router…" />
+            <SelectTrigger className="h-8 text-xs bg-[#252526] border-[#444] text-slate-200 focus:ring-[#007acc]">
+              <SelectValue placeholder="Destination device…" />
             </SelectTrigger>
             <SelectContent>
               {routers.map((r) => (
@@ -296,21 +308,34 @@ export function ControlPanel({
             </p>
           )}
           {selectedEdge && (
-            <p className="text-xs text-slate-400">
-              Selected link:{' '}
-              <span className="text-white">{selectedEdge.id}</span>{' '}
-              <Badge
-                className={cn(
-                  'text-[10px] px-1.5',
-                  selectedEdge.status === 'UP'
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    : 'bg-red-500/20 text-red-400 border-red-500/30'
-                )}
-                variant="outline"
-              >
-                {selectedEdge.status}
-              </Badge>
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-400">
+                Selected link:{' '}
+                <span className="text-white">{selectedEdge.id}</span>{' '}
+                <Badge
+                  className={cn(
+                    'text-[10px] px-1.5',
+                    selectedEdge.status === 'UP'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : 'bg-red-500/20 text-red-400 border-red-500/30'
+                  )}
+                  variant="outline"
+                >
+                  {selectedEdge.status}
+                </Badge>
+                {' '}cost: <span className="text-cyan-400 font-semibold">{selectedEdge.cost}</span>
+              </p>
+              {onEditLinkCost && (
+                <button
+                  onClick={() => onEditLinkCost(selectedEdge.id, selectedEdge.cost)}
+                  className="ml-2 flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 transition-colors"
+                  title="Edit link cost"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edit
+                </button>
+              )}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-2">

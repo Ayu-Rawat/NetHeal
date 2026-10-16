@@ -40,13 +40,12 @@ class MetricsCollector:
 
         delivery_ratio = (delivered / sent) if sent > 0 else 0.0
 
-        # Average route cost among delivered packets
+        # Average route cost among delivered packets — use stored route_cost (real Dijkstra cost)
         routed_costs = [
-            len(p.route) - 1  # approximate hop-count as cost proxy when exact unavailable
+            p.route_cost
             for p in packets
-            if p.status == PacketStatus.DELIVERED and p.route
+            if p.status == PacketStatus.DELIVERED and p.route_cost > 0
         ]
-        # Try to extract actual cost from route if available; fallback to hop count
         avg_route_cost = sum(routed_costs) / len(routed_costs) if routed_costs else 0.0
 
         return SimulationMetrics(
@@ -74,7 +73,7 @@ class MetricsCollector:
             if p.status == PacketStatus.DELIVERED and p.route:
                 history.append({
                     "timestamp": p.created_at,
-                    "cost": len(p.route) - 1,
+                    "cost": p.route_cost,
                     "packet_id": p.id,
                 })
         return history
@@ -98,8 +97,8 @@ class MetricsCollector:
             delivered = sum(1 for p in pkts if p.status == PacketStatus.DELIVERED)
             dropped = total - delivered
             ratio = (delivered / total) if total > 0 else 0.0
-            costs = [len(p.route) - 1 for p in pkts
-                     if p.status == PacketStatus.DELIVERED and p.route]
+            costs = [p.route_cost for p in pkts
+                     if p.status == PacketStatus.DELIVERED and p.route_cost > 0]
             avg_cost = sum(costs) / len(costs) if costs else 0.0
             return {
                 "packets_sent": total,

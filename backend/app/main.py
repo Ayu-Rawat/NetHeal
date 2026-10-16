@@ -58,6 +58,7 @@ def _make_sim_state(topology_id: str = "simple_star") -> Dict[str, Any]:
         "simulator": simulator,
         "metrics": metrics,
         "last_recovery_ms": 0.0,
+        "active_route": None,
     }
 
 
@@ -88,6 +89,28 @@ class SendPacketsRequest(BaseModel):
     source: str
     dest: str
     count: int = 20
+
+
+class UpdateLinkCostRequest(BaseModel):
+    cost: float
+
+
+class CustomTopologyRequest(BaseModel):
+    nodes: List[Dict]
+    links: List[Dict]
+
+
+class AddNodeRequest(BaseModel):
+    device_type: str
+    x: float = 0
+    y: float = 0
+
+
+class AddLinkRequest(BaseModel):
+    source: str
+    target: str
+    cost: float = 1.0
+    latency: float = 10.0
 
 
 # ---------------------------------------------------------------------------
@@ -146,6 +169,7 @@ def get_state() -> NetworkState:
     }
     state.packets = packets
     state.metrics = metrics_col.compute(packets, state.events, failures)
+    state.active_route = sim_state.get("active_route")
     return state
 
 
@@ -156,6 +180,73 @@ def reset_simulation() -> Dict:
     topology_id = sim_state["topology_id"]
     sim_state = _make_sim_state(topology_id)
     return {"status": "ok", "message": f"Simulation reset to topology '{topology_id}'."}
+
+
+# ---------------------------------------------------------------------------
+# Link cost update endpoint
+# ---------------------------------------------------------------------------
+
+@app.patch("/api/link/{link_id}/cost", summary="Update link cost")
+def update_link_cost(link_id: str, body: UpdateLinkCostRequest) -> Dict:
+    """Update the routing cost of a link in the active topology."""
+    if body.cost <= 0:
+        raise HTTPException(status_code=400, detail="Cost must be > 0.")
+    try:
+        _get_network().update_link_cost(link_id, body.cost)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"status": "ok", "link_id": link_id, "cost": body.cost}
+
+
+@app.post("/api/nodes", summary="Add a device to the live topology")
+def add_node(body: AddNodeRequest) -> Dict:
+    """Drop a router, PC, printer, or other device onto the canvas."""
+    try:
+        node = _get_network().add_node(body.device_type, body.x, body.y)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"status": "ok", "node": node.model_dump()}
+
+
+@app.post("/api/links", summary="Connect two devices")
+def add_link(body: AddLinkRequest) -> Dict:
+    """Create a bidirectional link between two devices."""
+    if body.cost <= 0:
+        raise HTTPException(status_code=400, detail="Cost must be > 0.")
+    try:
+        link = _get_network().add_link(body.source, body.target, body.cost, body.latency)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {"status": "ok", "link": link.model_dump()}
+
+
+# ---------------------------------------------------------------------------
+# Custom topology endpoint
+# ---------------------------------------------------------------------------
+
+@app.post("/api/topology/custom", summary="Load a custom topology")
+def load_custom_topology(body: CustomTopologyRequest) -> Dict:
+    """Load an arbitrary user-defined topology."""
+    global sim_state
+    if not body.nodes:
+        raise HTTPException(status_code=400, detail="Topology must have at least one node.")
+    custom_topo = {
+        "id": "custom",
+        "name": "Custom Topology",
+        "description": "User-defined topology",
+        "nodes": body.nodes,
+        "links": body.links,
+    }
+    # Temporarily inject into TOPOLOGIES so _make_sim_state can find it
+    TOPOLOGIES["custom"] = custom_topo
+    sim_state = _make_sim_state("custom")
+    return {
+        "status": "ok",
+        "topology_id": "custom",
+        "name": "Custom Topology",
+        "nodes": len(body.nodes),
+        "links": len(body.links),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +261,9 @@ def compute_route(
     """Compute the shortest (lowest-cost) path from src to dst."""
     from .routing import RoutingEngine
     engine = RoutingEngine()
-    return engine.find_route(_get_network(), src, dst)
+    result = engine.find_route(_get_network(), src, dst)
+    sim_state["active_route"] = result
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +278,10 @@ def send_packets(body: SendPacketsRequest) -> Dict:
     packets = _get_simulator().send_packets(body.source, body.dest, body.count)
     delivered = sum(1 for p in packets if p.status.value == "DELIVERED")
     dropped = sum(1 for p in packets if p.status.value == "DROPPED")
+    from .routing import RoutingEngine
+    sim_state["active_route"] = RoutingEngine().find_route(
+        _get_network(), body.source, body.dest
+    )
     return {
         "status": "ok",
         "sent": len(packets),

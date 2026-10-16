@@ -5,6 +5,8 @@ import type {
   PacketState,
   SimulationMetrics,
   SimEvent,
+  RouterState,
+  LinkState,
 } from '@/lib/types';
 
 const BASE = 'http://localhost:8000';
@@ -46,6 +48,26 @@ export const api = {
       `/api/events${category ? `?category=${category}` : ''}`
     ),
   clearEvents: () => apiFetch<unknown>('/api/events', { method: 'DELETE' }),
+  updateLinkCost: (id: string, cost: number) =>
+    apiFetch<{ status: string; link_id: string; cost: number }>(`/api/link/${id}/cost`, {
+      method: 'PATCH',
+      body: JSON.stringify({ cost }),
+    }),
+  loadCustomTopology: (nodes: object[], links: object[]) =>
+    apiFetch<{ status: string; topology_id: string; name: string; nodes: number; links: number }>(
+      '/api/topology/custom',
+      { method: 'POST', body: JSON.stringify({ nodes, links }) }
+    ),
+  addNode: (deviceType: string, x: number, y: number) =>
+    apiFetch<{ status: string; node: RouterState }>(
+      '/api/nodes',
+      { method: 'POST', body: JSON.stringify({ device_type: deviceType, x, y }) }
+    ),
+  addLink: (source: string, target: string, cost = 1) =>
+    apiFetch<{ status: string; link: LinkState }>(
+      '/api/links',
+      { method: 'POST', body: JSON.stringify({ source, target, cost }) }
+    ),
   exportJson: () => `${BASE}/api/export/json`,
   exportCsv: () => `${BASE}/api/export/csv`,
 };

@@ -9,6 +9,7 @@ export interface RouterState {
   status: RouterStatus;
   x: number;
   y: number;
+  device_type?: string;
 }
 
 export interface LinkState {
@@ -35,6 +36,7 @@ export interface PacketState {
   route: string[];
   current_hop: number;
   status: PacketStatus;
+  route_cost: number;
   created_at: string;
   completed_at: string | null;
   drop_reason: string | null;

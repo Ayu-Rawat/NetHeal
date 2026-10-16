@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Network,
-  FlaskConical,
   BarChart3,
   BookOpen,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: 'Simulator', icon: Network },
-  { href: '/experiments', label: 'Experiments', icon: FlaskConical },
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/simulator', label: 'Simulator', icon: Network },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/concepts', label: 'Concepts', icon: BookOpen },
 ];

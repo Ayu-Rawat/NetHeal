@@ -144,6 +144,7 @@ class PacketSimulator:
                     route=path,
                     current_hop=len(path) - 1,
                     status=PacketStatus.DELIVERED,
+                    route_cost=route_result.cost,
                     created_at=created,
                     completed_at=_utcnow(),
                 )
